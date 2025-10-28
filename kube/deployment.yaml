@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-py
+  namespace: maslak
+  labels:
+    scope: test
+    app: test-py
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-py
+  template:
+    metadata:
+      labels:
+        app: test-py
+    spec:
+      containers:
+        - name: test-py
+          image: mrbagef/testpy:alpha
+          ports:
+            - containerPort: 5000
