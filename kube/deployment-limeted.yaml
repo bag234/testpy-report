@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-py
+  namespace: maslak
+  labels:
+    scope: test
+    app: test-py
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-py
+  template:
+    metadata:
+      labels:
+        app: test-py
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: test-py
+          image: mrbagef/testpy:alpha
+          ports:
+            - containerPort: 5000
+          resources:
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+          livenessProbe:
+            httpGet:
+              path: /monitor
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /monitor
+              port: 5000
+            initialDelaySeconds: 3
+            periodSeconds: 5

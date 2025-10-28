@@ -1,0 +1,49 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = "mrbagef/testpy:latest"
+        NAMESPACE = "maslak"
+    }
+
+    stages {
+
+        stage('Clone original repo') {
+            steps {
+                git branch: 'master', url: 'git@github.com:benc-uk/python-demoapp.git' 
+            }
+        }
+
+        stage('Update requirements & Dockerfile') {
+            steps {
+                sh 'wget https://raw.githubusercontent.com/bag234/testpy-report/refs/heads/main/requirements.txt -O src/requirements.txt'
+                sh 'wget https://raw.githubusercontent.com/bag234/testpy-report/refs/heads/main/dockerfile -O dockerfile'
+            }
+        }
+
+        stage('Build Docker image and publish to Docker Hub') {
+            steps {
+                def app = docker.build("${DOCKER_IMAGE}")
+                docker.withRegistry('', 'docker-hub-credentials') {
+                    app.push()
+                }
+            }
+        }
+
+        stage('Create namespace if not exists') {
+            steps {
+                sh 'kubectl get ns ${NAMESPACE} || kubectl create ns ${NAMESPACE}'
+            }
+        }
+
+        stage('Deploy to k3s') {
+            steps {
+                sh 'wget https://raw.githubusercontent.com/bag234/testpy-report/refs/heads/main/kube/deployment-limeted.yaml -O deployment.yaml'
+                sh 'kubectl apply -f deployment.yaml -n ${NAMESPACE}'
+
+                sh 'wget https://raw.githubusercontent.com/bag234/testpy-report/refs/heads/main/kube/service.yaml -O service.yaml'
+                sh 'kubectl apply -f service.yaml -n ${NAMESPACE}'
+            }
+        }
+    }
+}
